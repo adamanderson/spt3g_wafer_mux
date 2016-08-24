@@ -1,0 +1,1 @@
+This repository contains software and hardware drawings for an Arduino-based multiplexing multimeter used to pin out SPT3G wafers. Each flex cable connects to a ZIF connector mounted on a PCB that connects to two banks of 80:1 multiplexers, allowing the resistance to be read out between any pair of pins on the cable. Control and readout is done with an Arduino Uno. 
