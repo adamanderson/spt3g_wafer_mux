@@ -73,6 +73,8 @@ float Rref = 4720.0;
 void loop() {
   if (Serial.available() > 0) {
     // put your main code here, to run repeatedly:
+    int channels[] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,
+                      17,18,19,20,21,22,23,24,25,26,27,28,29,30};
     int channels_0[] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};
     int channels_1[] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};
     //int channels_0[] = {2,6,12};
@@ -85,29 +87,66 @@ void loop() {
     digitalWrite(13, HIGH);
     int enable_readers[] = {12, 13};
     int nreaders = sizeof(enable_readers) / sizeof(enable_readers[0]);
+    int nchan = sizeof(channels) / sizeof(channels[0]);
     int nchan_0 = sizeof(channels_0) / sizeof(channels_0[0]); 
-    int nchan_1 = sizeof(channels_1) / sizeof(channels_1[0]);  
+    int nchan_1 = sizeof(channels_1) / sizeof(channels_1[0]);
+    for(int jchan = 0; jchan < nchan; jchan++)  
+    {
+      int choose_mux = 0;
+      int choose_mux_compare = 0;
+      int choose_chan = jchan;
+      int channel_compare = jchan + 1;
+      while(choose_chan > 15)
+      {
+        choose_chan = choose_chan - 16;
+        choose_mux ++;
+      }
+      digitalWrite(enable_output[choose_mux], LOW);
+      delay(200);
+
+      while(channel_compare > 15)
+      {
+        channel_compare = channel_compare - 16;
+        choose_mux_compare ++;
+      }
+      digitalWrite(enable_readers[choose_mux_compare], LOW);
+      delay(200);
+      select_channel_0(jchan);
+      select_channel_1(jchan+1);
+      float V = read_voltage();
+      Serial.println(channels_0[choose_chan]+choose_mux*16);
+      //counter ++;
+      Serial.println(channels_1[channel_compare]+choose_mux_compare*16);
+      //counter ++;
+      Serial.println(V);
+      //counter ++;
+      Serial.println();     
+      digitalWrite(enable_output[choose_mux], HIGH);
+      delay(200);
+      digitalWrite(enable_readers[choose_mux_compare], HIGH);
+      delay(200);
+
+    }
     /*int channel_0 = 10;
     int channel_1 = 11;
-    */
+
     for(int joutput = 0; joutput < nmuxes; joutput++)
     {
       digitalWrite(enable_output[joutput], LOW);
       delay(200);
-      for(int jchan = 0; jchan < nchan_0; jchan++)
+      for(int jchan = 0; jchan < nchan_0-1; jchan++)
       {
         select_channel_0(channels_0[jchan]);
         delay(200);
-        for(int kchan = 0; kchan < nchan_1; kchan++)
-        {
+        //for(int kchan = 0; kchan < nchan_1; kchan++)
+        //{
+          int kchan = jchan++;
           select_channel_1(channels_1[kchan]);
           delay(200);
           for(int jreader = 0; jreader < nreaders; jreader++)
           {
             digitalWrite(enable_readers[jreader], LOW);
             delay(200);
-            if (channels_0[jchan]+joutput*16 != channels_1[kchan]+jreader*16)
-              {
               float V = read_voltage();
               Serial.println(channels_0[jchan]+joutput*16);
               counter ++;
@@ -119,14 +158,14 @@ void loop() {
               counter = 0;
               
               delay(200); 
-            }
+            
           digitalWrite(enable_readers[jreader], HIGH); 
           }
-         }
+         //}
       } 
       digitalWrite(enable_output[joutput], HIGH);
       delay(200); 
-    }
+    }    */
   }
     /*
     select_channel_0(channel_0);
