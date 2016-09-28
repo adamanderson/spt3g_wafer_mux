@@ -51,6 +51,8 @@ void setup() {
   Serial.begin(9600);
 
   // setup digital outputs to control MUX switching
+  pinMode(2, OUTPUT);
+  pinMode(3, OUTPUT);
   pinMode(4, OUTPUT);
   pinMode(5, OUTPUT);
   pinMode(6, OUTPUT);
@@ -61,16 +63,7 @@ void setup() {
   pinMode(11, OUTPUT);
   pinMode(12, OUTPUT);
   pinMode(13, OUTPUT);
-  pinMode(14, OUTPUT);
-  pinMode(15, OUTPUT);
-  pinMode(16, OUTPUT);
-  pinMode(17, OUTPUT);
-  pinMode(23, OUTPUT);
-  pinMode(25, OUTPUT);
-  pinMode(27, OUTPUT);
-  pinMode(29, OUTPUT);
-  pinMode(31, OUTPUT);
-  pinMode(33, OUTPUT);
+
 }
 
 int counter = 0;
@@ -86,13 +79,13 @@ void loop() {
     int channels_1[] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};
     //int channels_0[] = {2,6,12};
     //int channels_1[] = {2,6,12};
-    int enable_output[] = {13, 12, 11, 10, 9, 8};
+    int enable_output[] = {10, 11};
     int nmuxes = sizeof(enable_output) / sizeof(enable_output[0]);
     digitalWrite(10, HIGH); 
     digitalWrite(11, HIGH); 
     digitalWrite(12, HIGH);
     digitalWrite(13, HIGH);
-    int enable_readers[] = {33, 31, 29, 27, 25, 24};
+    int enable_readers[] = {12, 13};
     int nreaders = sizeof(enable_readers) / sizeof(enable_readers[0]);
     int nchan = sizeof(channels) / sizeof(channels[0]);
     int nchan_0 = sizeof(channels_0) / sizeof(channels_0[0]); 
@@ -203,7 +196,7 @@ void serialEvent() {
 
 void select_channel_1(int chan)
 {
-  int pin_nums[] = {17, 16, 15, 14};
+  int pin_nums[] = {6,7,8,9};
   
   for(int jbit = 0; jbit<4; jbit++)
   {
@@ -222,7 +215,7 @@ void select_channel_1(int chan)
 
 void select_channel_0(int chan)
 {
-  int pin_nums[] = {4,5,6,7};
+  int pin_nums[] = {2,3,4,5};
   
   for(int jbit = 0; jbit<4; jbit++)
   {
@@ -241,7 +234,7 @@ void select_channel_0(int chan)
 
 float read_voltage()
 {
-  int ADCval = analogRead(15);
+  int ADCval = analogRead(0);
   float voltage = Rref * (1 - float(ADCval) / 1024.0) / (float(ADCval) / 1024.0);
   return voltage;
 }

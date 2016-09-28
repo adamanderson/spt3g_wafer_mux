@@ -24,7 +24,7 @@ def run():
     while len(voltage_dict['pin1'])<31:
         p = ser.readline()
         p = p.decode("utf-8")
-        #print(p)
+        print(p)
         if not p == '':
             if counter == 0:
                 channel1 = p.split('\r\n')[0]
@@ -68,12 +68,24 @@ def gen_csv():
     with open('short_test.csv', 'w') as csvfile:
         fieldnames = ['pin1', 'pin2', 'voltage']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-        
         writer.writeheader()
         for pin in voltage_dict['pin1']:
             pin = int(float(pin))
-            writer.writerow({'pin1': voltage_dict['pin1'][pin], 'pin2': voltage_dict['pin2'][pin], 'voltage': voltage_dict['voltage'][pin]})
+            info = ''
+            if even(pin):
+                if voltage_dict['voltage'][pin] == 'open':
+                    info = ' - abnormal'
+            else:
+                if not voltage_dict['voltage'][pin] == 'open':
+                    info = ' - abnormal'
+            writer.writerow({'pin1': voltage_dict['pin1'][pin], 'pin2': voltage_dict['pin2'][pin], 'voltage': voltage_dict['voltage'][pin] + info})
 
+def even(pin):
+    if not pin % 2:
+        even = True
+    else:
+        even = False
+    return even
 
 def gen_pdf():
 
