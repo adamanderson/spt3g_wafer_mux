@@ -21,7 +21,7 @@ def run():
     voltage_dict = {'pin1' : [], 'pin2' : [], 'voltage' : []}
     counter = 0
     print('Beginning Analysis \r\n ...')
-    while len(voltage_dict['pin1'])<31:
+    while len(voltage_dict['pin1'])<90:
         p = ser.readline()
         p = p.decode("utf-8")
         print(p)
@@ -39,6 +39,8 @@ def run():
                 voltage_dict['pin1'].append(channel1)
                 voltage_dict['pin2'].append(channel2)
                 if voltage != 'inf':
+                    if int(float(voltage)) > 100000:
+                        voltage = 'open'
                     voltage_dict['voltage'].append(voltage)
                 else:
                     voltage_dict['voltage'].append('open')
@@ -62,10 +64,10 @@ def run():
     perhaps write two separate dicts - one for odds, one for evens?
 """
 
-def gen_csv():
+def gen_csv(wafer_id, wafer_side, arm):
     import csv
     voltage_dict = run()
-    with open('short_test.csv', 'w') as csvfile:
+    with open('short_test_{0}_{1}_{2}.csv'.format(wafer_id,wafer_side,arm), 'w') as csvfile:
         fieldnames = ['pin1', 'pin2', 'voltage']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
@@ -78,7 +80,9 @@ def gen_csv():
             else:
                 if not voltage_dict['voltage'][pin] == 'open':
                     info = ' - abnormal'
-            writer.writerow({'pin1': voltage_dict['pin1'][pin], 'pin2': voltage_dict['pin2'][pin], 'voltage': voltage_dict['voltage'][pin] + info})
+            pin1_real = pin+1
+            pin2_real = pin+2
+            writer.writerow({'pin1': pin1_real, 'pin2': pin2_real, 'voltage': voltage_dict['voltage'][pin] + info})
 
 def even(pin):
     if not pin % 2:
