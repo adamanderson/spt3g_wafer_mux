@@ -1,101 +1,94 @@
 #!/bin/sh
 
 #  IOSerial.py
-#  
+#
 #
 #  Created by Anthony Corso on 9/8/16.
 #
 
-def run():
-    import serial
-    import time
+
+import serial
+import time
+import csv
+
+def run(GNDpin):
     connected = False
-    ser = serial.Serial('/dev/cu.usbmodem1411', 9600)
-    #while not connected:
-    #serin = ser.read()
-    #connected = True
-    #print(serin)
-    #connected = True
-    ser.write(b'1\r\n')
-    #while ser.read() == '1':
-    voltage_dict = {'pin1' : [], 'pin2' : [], 'voltage' : []}
-    counter = 0
+    ser = serial.Serial('/dev/tty.usbmodem1421', 9600)
+
+    R_dict = {'pin1' : [], 'pin2' : [], 'R' : [], 'R_gnd': []}  # good for writing CSV, but a little kludgy given how data comes off the arduino
+
+    time.sleep(1)
+    ser.write('TESshorts\n')
     print('Beginning Analysis \r\n ...')
-    while len(voltage_dict['pin1'])<90:
+    # time.sleep(1)
+    p = ser.readline()
+    while 'end' not in p:
+        data = p.rstrip('\n').split(',')
+        print('Probing pins %s to %s' % (data[0], data[1]))
+        if len(data) == 3:
+            R_dict['pin1'].append(int(data[0]))
+            R_dict['pin2'].append(int(data[1]))
+            R_dict['R'].append(float(data[2]))
         p = ser.readline()
-        p = p.decode("utf-8")
-        print(p)
-        if not p == '':
-            if counter == 0:
-                channel1 = p.split('\r\n')[0]
-                #voltage_dict[channel1]
-            elif counter == 1:
-                channel2 = p.split('\r\n')[0]
-                #voltage_dict['channel_1']['channel_2'] = channel2
-            elif counter == 2:
-                voltage = p.split('\r\n')[0]
-                #channel1 = '{0}'.format(channel1)
-                #channel2 = '{0}'.format(channel2)
-                voltage_dict['pin1'].append(channel1)
-                voltage_dict['pin2'].append(channel2)
-                if voltage != 'inf':
-                    if int(float(voltage)) > 100000:
-                        voltage = 'open'
-                    voltage_dict['voltage'].append(voltage)
-                else:
-                    voltage_dict['voltage'].append('open')
-            #print(voltage_dict)
-            #print('running')
-        if counter != 3:
-            counter += 1
-        else:
-            counter = 0
-    ser.write(b'0\r\n')
+
+    if GNDpin == 0:
+        ser.write('GNDshorts0\n')
+    elif GNDpin == 89:
+        ser.write('GNDshorts1\n')
+    else:
+        return R_dict
+    # time.sleep(0.1)
+    p = ser.readline()
+    while 'end' not in p:
+        data = p.rstrip('\n').split(',')
+        print('Probing pins %s to %s' % (data[0], data[1]))
+        if len(data) == 3:
+            R_dict['R_gnd'].append(float(data[2]))
+        p = ser.readline()
+
     ser.close()
     print('Analysis Complete')
-    voltage_dict['info'] = ["Voltage between any two mux pins."]
-    return voltage_dict
-    #meme = ser.readline()
-    #meme = meme.decode("utf-8")
-    #print(meme)
+    R_dict['info'] = ["Resistance between any two mux pins."]
+    return R_dict
 
-"""
-    Write dict {'pin1', 'pin2', 'voltage'}
-    perhaps write two separate dicts - one for odds, one for evens?
-"""
 
-def gen_csv(wafer_id, wafer_side, arm):
-    import csv
-    voltage_dict = run()
-    with open('short_test_{0}_{1}_{2}.csv'.format(wafer_id,wafer_side,arm), 'w') as csvfile:
-        fieldnames = ['pin1', 'pin2', 'voltage']
+def gen_csv(wafer_id, wafer_side, leg):
+    if leg % 2 == 1:
+        R_dict = run(89)
+    elif leg % 2 == 0:
+        R_dict = run(0)
+
+    fieldnames = ['pin1', 'pin2', 'R', 'R_gnd', 'info']
+    max_pin_open = 24
+    min_pin_open = 66
+
+    with open('short_test_{0}_{1}_{2}.csv'.format(wafer_id,wafer_side,leg), 'w') as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
-        for pin in voltage_dict['pin1']:
-            pin = int(float(pin))
+        for pin in R_dict['pin1']:
             info = ''
-            if even(pin):
-                if voltage_dict['voltage'][pin] == 'open':
-                    info = ' - abnormal'
-            else:
-                if not voltage_dict['voltage'][pin] == 'open':
-                    info = ' - abnormal'
+            if (leg % 2 == 1 and pin < min_pin_open) or \
+               (leg % 2 == 0 and pin > max_pin_open):
+                if pin % 2 == 1 and R_dict['R'][pin] != float('inf'):
+                    info = 'abnormal'
+                elif pin % 2 == 0 and R_dict['R'][pin] == float('inf'):
+                    info = 'abnormal'
+                if R_dict['R_gnd'][pin] != float('inf'):
+                    info = 'abnormal'
             pin1_real = pin+1
             pin2_real = pin+2
-            writer.writerow({'pin1': pin1_real, 'pin2': pin2_real, 'voltage': voltage_dict['voltage'][pin] + info})
+            writer.writerow({'pin1': pin1_real,
+                             'pin2': pin2_real,
+                             'R': R_dict['R'][pin],
+                             'R_gnd': R_dict['R_gnd'][pin],
+                             'info': info})
 
-def even(pin):
-    if not pin % 2:
-        even = True
-    else:
-        even = False
-    return even
 
 def gen_pdf():
 
     """
         Requires pydfmux
-        
+
     """
     import pydfmux
     from pydfmux.core.utils.rail_monitoring import RailMonitor
@@ -127,3 +120,18 @@ def gen_pdf():
         rest.add_table(shortlist)
     rst_file.close()
     os.system("rst2pdf '{0}' -o '{1}'".format(rst_path, os.path.join(savepath, savename + '.pdf')))
+
+
+if __name__ == "__main__":
+    import argparse as ap
+    P = ap.ArgumentParser(description="Probe SPT wafers for TES-TES shorts and shorts to GND",
+                          formatter_class=ap.ArgumentDefaultsHelpFormatter)
+    P.add_argument('wafer', metavar='wafer', action='store', default=None,
+                   help='wafer name')
+    P.add_argument('side', metavar='side', action='store', type=int, default=None,
+                   help='side')
+    P.add_argument('leg', metavar='leg', action='store', type=int, default=None,
+                   help='leg')
+    args = P.parse_args()
+
+    gen_csv(args.wafer, args.side, int(args.leg))
