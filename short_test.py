@@ -20,7 +20,6 @@ def run(GNDpin):
     time.sleep(1)
     ser.write('TESshorts\n')
     print('Beginning Analysis \r\n ...')
-    # time.sleep(1)
     p = ser.readline()
     while 'end' not in p:
         data = p.rstrip('\n').split(',')
@@ -37,7 +36,6 @@ def run(GNDpin):
         ser.write('GNDshorts1\n')
     else:
         return R_dict
-    # time.sleep(0.1)
     p = ser.readline()
     while 'end' not in p:
         data = p.rstrip('\n').split(',')
@@ -67,8 +65,8 @@ def gen_csv(wafer_id, wafer_side, leg):
         writer.writeheader()
         for pin in R_dict['pin1']:
             info = ''
-            if (leg % 2 == 1 and pin < min_pin_open) or \
-               (leg % 2 == 0 and pin > max_pin_open):
+            if (leg % 2 == 1 and pin <= min_pin_open) or \
+               (leg % 2 == 0 and pin >= max_pin_open):
                 if pin % 2 == 1 and R_dict['R'][pin] != float('inf'):
                     info = 'abnormal'
                 elif pin % 2 == 0 and R_dict['R'][pin] == float('inf'):
