@@ -13,7 +13,8 @@ int zifPins[] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,
                   59,60,61,62,63,64,65,66,67,68,69,70,71,72,
                   73,74,75,76,77,78,79,80,81,82,83,84,85,86,
                   87,88,89};
-int gndPins[] = {0,89};
+int gndPinsRev1[] = {0,89};
+int gndPinRev2 = 90;
 int muxPins0[] = {15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0};
 int muxPins1[] = {15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0};
 int logicPins0[] = {10,11,12,13};
@@ -21,7 +22,6 @@ int logicPins1[] = {14,15,16,17};
 int enablePins0[] = {4,5,6,7,8,9};
 int enablePins1[] = {33,31,29,27,25,23};
 int nZifPins = sizeof(zifPins) / sizeof(zifPins[0]);
-int nGNDPins = sizeof(gndPins) / sizeof(gndPins[0]);
 int nLogicPins0 = sizeof(logicPins0) / sizeof(logicPins0[0]);
 int nLogicPins1 = sizeof(logicPins1) / sizeof(logicPins1[0]);
 int nEnablePins0 = sizeof(enablePins0) / sizeof(enablePins0[0]);
@@ -72,7 +72,7 @@ void loop() {
     
       checkPins(tesShortsList0, tesShortsList1, nPinsTESShorts1);
     }
-    else if(command == "GNDshorts0\n")
+    else if(command == "GNDshorts0\n" || command == "GNDshorts1\n" || command == "GNDshortsRev2\n")
     {
       // Shorts to GND
       int gndShortsList0[90];
@@ -80,28 +80,19 @@ void loop() {
       for(int jPin = 0; jPin < 90; jPin++)
       {
         gndShortsList0[jPin] = jPin;
-        gndShortsList1[jPin] = gndPins[0];
+        if(command == "GNDshorts0\n")
+          gndShortsList1[jPin] = gndPinsRev1[0];
+        else if(command == "GNDshorts1\n")
+          gndShortsList1[jPin] = gndPinsRev1[1];
+        else if(command == "GNDshortsRev2\n")
+          gndShortsList1[jPin] = gndPinRev2;
       }
       int nPinsGNDShorts0 = sizeof(gndShortsList0) / sizeof(gndShortsList0[0]);
       int nPinsGNDShorts1 = sizeof(gndShortsList1) / sizeof(gndShortsList1[0]);
     
       checkPins(gndShortsList0, gndShortsList1, nPinsGNDShorts1);
     }
-    else if(command == "GNDshorts1\n")
-    {
-      // Shorts to GND
-      int gndShortsList0[90];
-      int gndShortsList1[90];
-      for(int jPin = 0; jPin < 90; jPin++)
-      {
-        gndShortsList0[jPin] = jPin;
-        gndShortsList1[jPin] = gndPins[1];
-      }
-      int nPinsGNDShorts0 = sizeof(gndShortsList0) / sizeof(gndShortsList0[0]);
-      int nPinsGNDShorts1 = sizeof(gndShortsList1) / sizeof(gndShortsList1[0]);
-    
-      checkPins(gndShortsList0, gndShortsList1, nPinsGNDShorts1);
-    } 
+
     Serial.println("end"); // termination string
   }
 }

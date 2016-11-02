@@ -1,17 +1,37 @@
-#!/bin/sh
-
-#  IOSerial.py
+#!/usr/bin/env python
 #
+# short_test.py
 #
-#  Created by Anthony Corso on 9/8/16.
+# Run tests for TES-TES shorts and shorts to ground using the pinout PCB
 #
+# Created by Anthony Corso on 9/8/16.
+# Reorganized by Adam Anderson
+# 11 October 2016
+# adama@fnal.gov
 
 
 import serial
 import time
 import csv
 
-def run(GNDpin):
+def run(rev, GNDpin=0):
+    '''
+    Run test for TES-TES shorts and test for shorts to ground.
+    
+    Parameters
+    ----------
+    rev : str
+        Revision number of MUX PCB ('1' if unmarked, or '2')
+    GNDpin : int
+        In rev1 of the MUX PCB, there were two possible pins to use
+        for ground (0 and 89). In rev2 this argument is irrelevant
+        since there is a unique ground pin (90)
+
+    Returns
+    -------
+    R_dict : dict
+        Dictionary of test results
+    '''
     connected = False
     ser = serial.Serial('/dev/tty.usbmodem1421', 9600)
 
@@ -30,10 +50,12 @@ def run(GNDpin):
             R_dict['R'].append(float(data[2]))
         p = ser.readline()
 
-    if GNDpin == 0:
+    if rev == '1' and GNDpin == 0:
         ser.write('GNDshorts0\n')
-    elif GNDpin == 89:
+    elif rev == '1' and GNDpin == 89:
         ser.write('GNDshorts1\n')
+    elif rev == '2':
+        ser.write('GNDshortsRev2\n')
     else:
         return R_dict
     p = ser.readline()
@@ -50,12 +72,15 @@ def run(GNDpin):
     return R_dict
 
 
-def gen_csv(wafer_id, wafer_side, leg):
-    if leg % 2 == 1:
-        R_dict = run(89)
-    elif leg % 2 == 0:
-        R_dict = run(0)
-
+def gen_csv(wafer_id, wafer_side, leg, rev):
+    if rev == '1':
+        if leg % 2 == 1:
+            R_dict = run(rev, 89)
+        elif leg % 2 == 0:
+            R_dict = run(rev, 0)
+    elif rev == '2':
+        R_dict = run(rev)
+            
     fieldnames = ['pin1', 'pin2', 'R', 'R_gnd', 'info']
     max_pin_open = 24
     min_pin_open = 66
@@ -130,6 +155,8 @@ if __name__ == "__main__":
                    help='side')
     P.add_argument('leg', metavar='leg', action='store', type=int, default=None,
                    help='leg')
+    P.add_argument('--rev', metavar='rev', action='store', default='2',
+		   help='PCB revision number (1 or 2)')
     args = P.parse_args()
 
-    gen_csv(args.wafer, args.side, int(args.leg))
+    gen_csv(args.wafer, args.side, int(args.leg), args.rev)
