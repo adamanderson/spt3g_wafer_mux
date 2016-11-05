@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env pytAhon
 #
 # short_test.py
 #
@@ -13,6 +13,8 @@
 import serial
 import time
 import csv
+
+Rref = 99500.0
 
 def run(rev, GNDpin=0):
     '''
@@ -35,7 +37,7 @@ def run(rev, GNDpin=0):
     connected = False
     ser = serial.Serial('/dev/tty.usbmodem1421', 9600)
 
-    R_dict = {'pin1' : [], 'pin2' : [], 'R' : [], 'R_gnd': []}  # good for writing CSV, but a little kludgy given how data comes off the arduino
+    R_dict = {'pin1' : [], 'pin2' : [], 'ADC': [], 'R' : [], 'ADC_gnd': [], 'R_gnd': []}  # good for writing CSV, but a little kludgy given how data comes off the arduino
 
     time.sleep(1)
     ser.write('TESshorts\n')
@@ -47,7 +49,13 @@ def run(rev, GNDpin=0):
         if len(data) == 3:
             R_dict['pin1'].append(int(data[0]))
             R_dict['pin2'].append(int(data[1]))
-            R_dict['R'].append(float(data[2]))
+            R_dict['ADC'].append(float(data[2]))
+            ADCval = float(data[2])
+            if ADCval != 0:
+                Rval = Rref * (1 - ADCval / 1024.0) / (ADCval / 1024.0)
+            else:
+                Rval = float('Inf')
+            R_dict['R'].append(Rval)
         p = ser.readline()
 
     if rev == '1' and GNDpin == 0:
@@ -63,7 +71,13 @@ def run(rev, GNDpin=0):
         data = p.rstrip('\n').split(',')
         print('Probing pins %s to %s' % (data[0], data[1]))
         if len(data) == 3:
-            R_dict['R_gnd'].append(float(data[2]))
+            R_dict['ADC_gnd'].append(float(data[2]))
+            ADCval = float(data[2])
+            if ADCval != 0:
+                Rval = Rref * (1 - ADCval / 1024.0) / (ADCval / 1024.0)
+            else:
+                Rval = float('Inf')
+            R_dict['R_gnd'].append(Rval)
         p = ser.readline()
 
     ser.close()
@@ -92,11 +106,11 @@ def gen_csv(wafer_id, wafer_side, leg, rev):
             info = ''
             if (leg % 2 == 1 and pin <= min_pin_open) or \
                (leg % 2 == 0 and pin >= max_pin_open):
-                if pin % 2 == 1 and R_dict['R'][pin] != float('inf'):
+                if pin % 2 == 1 and (R_dict['R'][pin] != float('inf') and R_dict['R'][pin] < 1.e6):
                     info = 'abnormal'
                 elif pin % 2 == 0 and R_dict['R'][pin] == float('inf'):
                     info = 'abnormal'
-                if R_dict['R_gnd'][pin] != float('inf'):
+                if R_dict['R_gnd'][pin] != float('inf') and R_dict['R'][pin] < 1.e6:
                     info = 'abnormal'
             pin1_real = pin+1
             pin2_real = pin+2

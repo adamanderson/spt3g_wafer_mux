@@ -120,8 +120,9 @@ void checkPins(int *pinList0, int *pinList1, int nPins)
     // limiting resistor, resulting in a slow RC time constant for the ADC).
     delay(20);
     
-    float R = readResistance();
-    sendData(pinList0[jpin], pinList1[jpin], R);
+    //float R = readResistance();
+    int ADCvalue = readADC();
+    sendData(pinList0[jpin], pinList1[jpin], ADCvalue);
 
     // disable the MUX channels
     digitalWrite(enablePins0[mux0], HIGH);
@@ -150,6 +151,14 @@ float readResistance()
   int ADCval = analogRead(A15);
   float R = Rref * (1 - float(ADCval) / 1024.0) / (float(ADCval) / 1024.0);
   return R;
+}
+
+
+// Just read the ADC, and don't convert to resistance.
+int readADC()
+{
+  int ADCval = analogRead(A15);
+  return ADCval;
 }
 
 
