@@ -96,8 +96,8 @@ def gen_csv(wafer_id, wafer_side, leg, rev):
         R_dict = run(rev)
             
     fieldnames = ['pin1', 'pin2', 'R', 'R_gnd', 'info']
-    max_pin_open = 24
-    min_pin_open = 66
+    max_pin_open = 23
+    min_pin_open = 65
 
     with open('short_test_{0}_{1}_{2}.csv'.format(wafer_id,wafer_side,leg), 'w') as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
