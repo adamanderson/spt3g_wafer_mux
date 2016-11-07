@@ -79,13 +79,21 @@ void loop() {
       int gndShortsList1[90];
       for(int jPin = 0; jPin < 90; jPin++)
       {
-        gndShortsList0[jPin] = jPin;
         if(command == "GNDshorts0\n")
+        {
+          gndShortsList0[jPin] = jPin;
           gndShortsList1[jPin] = gndPinsRev1[0];
+        }
         else if(command == "GNDshorts1\n")
+        {
+          gndShortsList0[jPin] = jPin;
           gndShortsList1[jPin] = gndPinsRev1[1];
+        }
         else if(command == "GNDshortsRev2\n")
-          gndShortsList1[jPin] = gndPinRev2;
+        {
+          gndShortsList0[jPin] = gndPinRev2;
+          gndShortsList1[jPin] = jPin;
+        }
       }
       int nPinsGNDShorts0 = sizeof(gndShortsList0) / sizeof(gndShortsList0[0]);
       int nPinsGNDShorts1 = sizeof(gndShortsList1) / sizeof(gndShortsList1[0]);

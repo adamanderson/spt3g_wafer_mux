@@ -106,18 +106,20 @@ def gen_csv(wafer_id, wafer_side, leg, rev):
             info = ''
             if (leg % 2 == 1 and pin <= min_pin_open) or \
                (leg % 2 == 0 and pin >= max_pin_open):
+                # check for TES-TES shorts below 1 MOhm
                 if pin % 2 == 1 and (R_dict['R'][pin] != float('inf') and R_dict['R'][pin] < 1.e6):
-                    info = 'abnormal'
-                elif pin % 2 == 0 and R_dict['R'][pin] == float('inf'):
-                    info = 'abnormal'
-                if R_dict['R_gnd'][pin] != float('inf') and R_dict['R'][pin] < 1.e6:
-                    info = 'abnormal'
+                    info = 'TES-TES short'
+                # check for TES opens and resistances >100 kOhm
+                elif pin % 2 == 0 and (R_dict['R'][pin] == float('inf') or R_dict['R'][pin] > 1.e5):
+                    info = 'TES open'
+                if R_dict['R_gnd'][pin] != float('inf') and R_dict['R_gnd'][pin] < 1.e6:
+                    info = 'short to GND'
             pin1_real = pin+1
             pin2_real = pin+2
             writer.writerow({'pin1': pin1_real,
                              'pin2': pin2_real,
-                             'R': R_dict['R'][pin],
-                             'R_gnd': R_dict['R_gnd'][pin],
+                             'R': '%2.f' % R_dict['R'][pin],
+                             'R_gnd': '%2.f' % R_dict['R_gnd'][pin],
                              'info': info})
 
 
