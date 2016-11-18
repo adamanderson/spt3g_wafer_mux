@@ -129,12 +129,12 @@ def run_leg(rev, leg):
             elif pin % 2 == 0 and (np.isinf(R_dict['R'][pin]) or R_dict['R'][pin] > 1.e5):
                 info = 'TES open'
                 n_open += 1
+            elif pin % 2 == 0:
+                n_ok += 1
             # check for shorts to ground
             if ~np.isinf(R_dict['R_gnd'][pin]) and R_dict['R_gnd'][pin] < 1.e6:
                 info = 'short to GND'
                 n_gnd += 1
-        if not info:
-            n_ok += 1
         R_dict['pin1'][pin] = pin + 1
         R_dict['pin2'][pin] = pin + 2
         R_dict['status'].append(info)
@@ -173,6 +173,14 @@ def wafer_bolo_info(wafer_side=None):
                'LC_ind': np.array([]),
                'ZIF_odd': np.array([])}
     hex_sides = [1,2,3,4,5,6]
+
+    # version 2 LC chip
+    # if zifs are pointed down, and chip is above them, this is reading the
+    # wiring from left to right
+    forder_chip=np.array([43, 10, 52, 53, 11, 44, 31, 21, 64, 65, 20, 32, 42,
+                          19, 67, 66, 18, 41, 30, 13, 56, 57, 12, 29, 39,  6, 59, 58,  7, 40, 27, 17,
+                          63, 62, 16, 28, 38,  1, 51, 50,  0, 37, 26,  2, 48, 49,  3, 25, 35, 14, 60,
+                          61, 15, 36, 23,  9, 55, 54,  8, 24, 34,  5, 47, 46,  4, 33], dtype=np.int32)
 
     #this table is the pixel to wafer wiring.  each columm is a side of the hex
     #1-6 according to wendy's wiring layout.
@@ -305,7 +313,7 @@ def gen_csv_side(wafer_id, wafer_side, rev):
 
         for leg in xrange(1,9):
             try:
-                raw_input('\n\nConnect leg {} and press ENTER to analyze. Ctrl+D to exit.'.format(leg))
+                raw_input('\n\nConnect leg {} and press ENTER to analyze. Ctrl+D to exit. '.format(leg))
             except EOFError:
                 break
 
@@ -318,17 +326,17 @@ def gen_csv_side(wafer_id, wafer_side, rev):
             wafer_data = [wafer[k][wafer_idx] for k in
                           ['ZIF_odd', 'bolometer']]
 
-            for lc_ind, zif, bolo in zip(wafer_data):
+            for zif, bolo in zip(*wafer_data):
 
                 # match resistance data to mapping
                 if zif in R_dict['pin1']:
-                    idx = np.where(R_dict['pin1'] == zif)[0]
+                    idx = np.where(R_dict['pin1'] == zif)[0][0]
                     R = '%.2f' % R_dict['R'][idx]
                     R_gnd = '%.2f' % R_dict['R_gnd'][idx]
                     status = R_dict['status'][idx]
 
                     if zif + 1 in R_dict['pin1']:
-                        idx = np.where(R_dict['pin1'] == zif + 1)[0]
+                        idx = np.where(R_dict['pin1'] == zif + 1)[0][0]
                         R_neighbor = '%.2f' % R_dict['R'][idx]
                         R_gnd_2 = '%.2f' % R_dict['R_gnd'][idx]
                     else:
@@ -346,10 +354,10 @@ def gen_csv_side(wafer_id, wafer_side, rev):
                                  'Flex_cable': leg,
                                  'ZIF_odd': zif,
                                  'bolometer': bolo,
-                                 'R': R
+                                 'R': R,
                                  'R_neighbor': R_neighbor,
-                                 'R_ground_1': R_ground_1,
-                                 'R_ground_2': R_ground_2,
+                                 'R_ground_1': R_gnd,
+                                 'R_ground_2': R_gnd_2,
                                  'Status': status})
 
 if __name__ == "__main__":
