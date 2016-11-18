@@ -1,4 +1,4 @@
-#!/usr/bin/env pytAhon
+#!/usr/bin/env python
 #
 # short_test_all.py
 #
