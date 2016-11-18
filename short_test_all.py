@@ -125,6 +125,7 @@ def run_leg(rev, leg):
             if pin % 2 == 1 and (~np.isinf(R_dict['R'][pin]) and R_dict['R'][pin] < 1.e6):
                 info = 'TES-TES short'
                 n_short += 1
+                n_ok -= 1
             # check for TES opens and resistances >100 kOhm
             elif pin % 2 == 0 and (np.isinf(R_dict['R'][pin]) or R_dict['R'][pin] > 1.e5):
                 info = 'TES open'
@@ -135,6 +136,8 @@ def run_leg(rev, leg):
             if ~np.isinf(R_dict['R_gnd'][pin]) and R_dict['R_gnd'][pin] < 1.e6:
                 info = 'short to GND'
                 n_gnd += 1
+                if pin % 2 == 0:
+                    n_ok -= 1
         R_dict['pin1'][pin] = pin + 1
         R_dict['pin2'][pin] = pin + 2
         R_dict['status'].append(info)
@@ -305,7 +308,8 @@ def gen_csv_side(wafer_id, wafer_side, rev):
     wafer = wafer_bolo_info(wafer_side)
 
     fieldnames = ['Side', 'Flex_cable', 'ZIF_odd', 'bolometer',
-                  'R', 'R_neighbor', 'R_ground_1', 'R_ground_2', 'Status']
+                  'R', 'R_neighbor', 'R_ground_1', 'R_ground_2',
+                  'Status_1', 'Status_2']
 
     with open('short_test_{}_{}.csv'.format(wafer_id, wafer_side), 'w') as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
@@ -339,15 +343,18 @@ def gen_csv_side(wafer_id, wafer_side, rev):
                         idx = np.where(R_dict['pin1'] == zif + 1)[0][0]
                         R_neighbor = '%.2f' % R_dict['R'][idx]
                         R_gnd_2 = '%.2f' % R_dict['R_gnd'][idx]
+                        status2 = R_dict['status'][idx]
                     else:
                         R_neighbor = ''
                         R_gnd_2 = ''
+                        status2 = ''
                 else:
                     R = ''
                     R_gnd = ''
                     R_neighbor = ''
                     R_gnd_2 = ''
                     status = ''
+                    status2 = ''
 
                 # write
                 writer.writerow({'Side': wafer_side,
@@ -358,7 +365,8 @@ def gen_csv_side(wafer_id, wafer_side, rev):
                                  'R_neighbor': R_neighbor,
                                  'R_ground_1': R_gnd,
                                  'R_ground_2': R_gnd_2,
-                                 'Status': status})
+                                 'Status_1': status,
+                                 'Status_2': status2})
 
 if __name__ == "__main__":
     import argparse as ap
