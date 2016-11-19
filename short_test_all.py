@@ -292,7 +292,7 @@ def wafer_bolo_info(wafer_side=None):
 
     return mapping
 
-def gen_csv_wafer(wafer_id, wafer_sides, rev='2', legs=range(1,9), test=False):
+def gen_csv_wafer(wafer_id, wafer_sides, legs=range(1,9), rev='2', test=False):
     """
     Create a CSV file for one side of the wafer.
 
@@ -314,7 +314,7 @@ def gen_csv_wafer(wafer_id, wafer_sides, rev='2', legs=range(1,9), test=False):
 
     fieldnames = ['Side', 'Flex_cable', 'ZIF_odd', 'bolometer',
                   'R', 'R_neighbor', 'R_ground_1', 'R_ground_2',
-                  'Status_1', 'Status_2']
+                  'Status']
 
     with open('short_test_{}_{}.csv'.format(wafer_id, wafer_sides_str), 'w') as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames, lineterminator='\n')
@@ -365,6 +365,9 @@ def gen_csv_wafer(wafer_id, wafer_sides, rev='2', legs=range(1,9), test=False):
                         status = ''
                         status2 = ''
 
+                    if status2 and not status:
+                        status = status2
+
                     # write
                     writer.writerow({'Side': side,
                                      'Flex_cable': leg,
@@ -374,8 +377,7 @@ def gen_csv_wafer(wafer_id, wafer_sides, rev='2', legs=range(1,9), test=False):
                                      'R_neighbor': R_neighbor,
                                      'R_ground_1': R_gnd,
                                      'R_ground_2': R_gnd_2,
-                                     'Status_1': status,
-                                     'Status_2': status2})
+                                     'Status': status})
 
 if __name__ == "__main__":
     import argparse as ap
@@ -386,12 +388,12 @@ if __name__ == "__main__":
     P.add_argument('sides', metavar='side', action='store', type=int, default=None,
                    nargs='+', choices=range(1,7),
                    help='Wafer side(s). Choices: [1, 2, 3, 4, 5, 6]', )
-    P.add_argument('--rev', metavar='rev', action='store', default='2',
-                   choices=['1','2'],
-		   help='PCB revision number (1 or 2)')
     P.add_argument('-l', '--legs', action='store', nargs='+', default=range(1,9),
                    type=int, choices=range(1,9), metavar='leg',
                    help='Flex cable leg(s) to analyze')
+    P.add_argument('--rev', metavar='rev', action='store', default='2',
+                   choices=['1','2'],
+		   help='PCB revision number (1 or 2)')
     args = P.parse_args()
 
-    gen_csv_wafer(args.wafer, args.sides, args.rev, legs=args.legs)
+    gen_csv_wafer(args.wafer, args.sides, legs=args.legs, rev=args.rev)
