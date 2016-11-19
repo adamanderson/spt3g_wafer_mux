@@ -168,13 +168,13 @@ def wafer_bolo_info(wafer_side=None):
         Generic channel mapping information for a full wafer or one side
     '''
     mapping = {'Pixel': np.array([], dtype=np.int32),
-               'Band': np.array([]),
+               'Band': np.array([], dtype=np.int32),
                'Pol': np.array([]),
                'bolometer': np.array([]),
-               'Side': np.array([]),
-               'Flex_cable': np.array([]),
-               'LC_ind': np.array([]),
-               'ZIF_odd': np.array([])}
+               'Side': np.array([], dtype=np.int32),
+               'Flex_cable': np.array([], dtype=np.int32),
+               'LC_ind': np.array([], dtype=np.int32),
+               'ZIF_odd': np.array([], dtype=np.int32)}
     hex_sides = [1,2,3,4,5,6]
 
     # version 2 LC chip
@@ -282,16 +282,17 @@ def wafer_bolo_info(wafer_side=None):
         mapping['LC_ind'] = np.append(mapping['LC_ind'], np.array(lcind_list))
         mapping['ZIF_odd'] = np.append(mapping['ZIF_odd'], np.array(zifodd_list))
 
-    # select only one side
-    if wafer_side in hex_sides:
-        idx = np.where(mapping['Side'] == wafer_side)[0]
+    # select only requested
+    wafer_side = np.atleast_1d(wafer_side)
+    if np.in1d(wafer_side, hex_sides).any():
+        idx = np.where(np.in1d(mapping['Side'], wafer_side))[0]
 
         for k, v in mapping.items():
             mapping[k] = v[idx]
 
     return mapping
 
-def gen_csv_side(wafer_id, wafer_side, rev):
+def gen_csv_wafer(wafer_id, wafer_sides, rev='2', legs=range(1,9)):
     """
     Create a CSV file for one side of the wafer.
 
@@ -299,74 +300,79 @@ def gen_csv_side(wafer_id, wafer_side, rev):
     ---------
     wafer_id : string
         Wafer name
-    wafer_side : int
-        Wafer side
+    wafer_sides : int or list of ints
+        Wafer side(s)
     rev : string
         PCB revision
+    legs : int or list of ints
+        Leg(s) on each wafer side
     """
 
-    wafer = wafer_bolo_info(wafer_side)
+    wafer_sides = np.atleast_1d(wafer_sides)
+    wafer = wafer_bolo_info(wafer_sides)
+    wafer_sides_str = '_'.join([str(x) for x in wafer_sides])
 
     fieldnames = ['Side', 'Flex_cable', 'ZIF_odd', 'bolometer',
                   'R', 'R_neighbor', 'R_ground_1', 'R_ground_2',
                   'Status_1', 'Status_2']
 
-    with open('short_test_{}_{}.csv'.format(wafer_id, wafer_side), 'w') as csvfile:
+    with open('short_test_{}_{}.csv'.format(wafer_id, wafer_sides_str), 'w') as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
 
-        for leg in xrange(1,9):
-            try:
-                raw_input('\n\nConnect leg {} and press ENTER to analyze. Ctrl+D to exit. '.format(leg))
-            except EOFError:
-                break
+        for side in wafer_sides:
+            for leg in legs:
+                try:
+                    raw_input('\n\nConnect leg {} of side {} and press ENTER to analyze. Ctrl+D to exit. '.format(leg, side))
+                except EOFError:
+                    break
 
-            # measure
-            R_dict = run_leg(rev, leg)
+                # measure
+                # R_dict = run_leg(rev, leg)
 
-            # get wafer mapping for this leg
-            wafer_idx = np.where((wafer['Side'] == wafer_side) &
-                                 (wafer['Flex_cable'] == leg))[0]
-            wafer_data = [wafer[k][wafer_idx] for k in
-                          ['ZIF_odd', 'bolometer']]
+                # get wafer mapping for this leg
+                wafer_idx = np.where((wafer['Side'] == side) &
+                                     (wafer['Flex_cable'] == leg))[0]
+                wafer_data = [wafer[k][wafer_idx] for k in
+                              ['ZIF_odd', 'bolometer']]
 
-            for zif, bolo in zip(*wafer_data):
+                for zif, bolo in zip(*wafer_data):
 
-                # match resistance data to mapping
-                if zif in R_dict['pin1']:
-                    idx = np.where(R_dict['pin1'] == zif)[0][0]
-                    R = '%.2f' % R_dict['R'][idx]
-                    R_gnd = '%.2f' % R_dict['R_gnd'][idx]
-                    status = R_dict['status'][idx]
+                    # match resistance data to mapping
+                    if zif in R_dict['pin1']:
+                        idx = np.where(R_dict['pin1'] == zif)[0][0]
+                        R = '%.2f' % R_dict['R'][idx]
+                        R_gnd = '%.2f' % R_dict['R_gnd'][idx]
+                        status = R_dict['status'][idx]
 
-                    if zif + 1 in R_dict['pin1']:
-                        idx = np.where(R_dict['pin1'] == zif + 1)[0][0]
-                        R_neighbor = '%.2f' % R_dict['R'][idx]
-                        R_gnd_2 = '%.2f' % R_dict['R_gnd'][idx]
-                        status2 = R_dict['status'][idx]
+                        if zif + 1 in R_dict['pin1']:
+                            idx = np.where(R_dict['pin1'] == zif + 1)[0][0]
+                            R_neighbor = '%.2f' % R_dict['R'][idx]
+                            R_gnd_2 = '%.2f' % R_dict['R_gnd'][idx]
+                            status2 = R_dict['status'][idx]
+                        else:
+                            R_neighbor = ''
+                            R_gnd_2 = ''
+                            status2 = ''
                     else:
+                        R = ''
+                        R_gnd = ''
                         R_neighbor = ''
                         R_gnd_2 = ''
+                        status = ''
                         status2 = ''
-                else:
-                    R = ''
-                    R_gnd = ''
-                    R_neighbor = ''
-                    R_gnd_2 = ''
-                    status = ''
-                    status2 = ''
 
-                # write
-                writer.writerow({'Side': wafer_side,
-                                 'Flex_cable': leg,
-                                 'ZIF_odd': zif,
-                                 'bolometer': bolo,
-                                 'R': R,
-                                 'R_neighbor': R_neighbor,
-                                 'R_ground_1': R_gnd,
-                                 'R_ground_2': R_gnd_2,
-                                 'Status_1': status,
-                                 'Status_2': status2})
+                    # write
+                    writer.writerow({'Side': side,
+                                     'Flex_cable': leg,
+                                     'ZIF_odd': zif,
+                                     'bolometer': bolo,
+                                     'R': R,
+                                     'R_neighbor': R_neighbor,
+                                     'R_ground_1': R_gnd,
+                                     'R_ground_2': R_gnd_2,
+                                     'Status_1': status,
+                                     'Status_2': status2})
 
 if __name__ == "__main__":
     import argparse as ap
@@ -374,10 +380,15 @@ if __name__ == "__main__":
                           formatter_class=ap.ArgumentDefaultsHelpFormatter)
     P.add_argument('wafer', metavar='wafer', action='store', default=None,
                    help='wafer name')
-    P.add_argument('side', metavar='side', action='store', type=int, default=None,
-                   help='side')
-    P.add_argument('--rev', metavar='rev', action='store', default='2', choices=['1','2'],
+    P.add_argument('sides', metavar='side', action='store', type=int, default=None,
+                   nargs='+', choices=range(1,7),
+                   help='Wafer side(s). Choices: [1, 2, 3, 4, 5, 6]', )
+    P.add_argument('--rev', metavar='rev', action='store', default='2',
+                   choices=['1','2'],
 		   help='PCB revision number (1 or 2)')
+    P.add_argument('-l', '--legs', action='store', nargs='+', default=range(1,9),
+                   type=int, choices=range(1,9), metavar='leg',
+                   help='Flex cable leg(s) to analyze')
     args = P.parse_args()
 
-    gen_csv_side(args.wafer, args.side, args.rev)
+    gen_csv_wafer(args.wafer, args.sides, args.rev, legs=args.legs)
