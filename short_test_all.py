@@ -292,7 +292,7 @@ def wafer_bolo_info(wafer_side=None):
 
     return mapping
 
-def gen_csv_wafer(wafer_id, wafer_sides, rev='2', legs=range(1,9)):
+def gen_csv_wafer(wafer_id, wafer_sides, rev='2', legs=range(1,9), test=False):
     """
     Create a CSV file for one side of the wafer.
 
@@ -317,7 +317,7 @@ def gen_csv_wafer(wafer_id, wafer_sides, rev='2', legs=range(1,9)):
                   'Status_1', 'Status_2']
 
     with open('short_test_{}_{}.csv'.format(wafer_id, wafer_sides_str), 'w') as csvfile:
-        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames, lineterminator='\n')
         writer.writeheader()
 
         for side in wafer_sides:
@@ -328,7 +328,10 @@ def gen_csv_wafer(wafer_id, wafer_sides, rev='2', legs=range(1,9)):
                     break
 
                 # measure
-                # R_dict = run_leg(rev, leg)
+                if test:
+                    R_dict = {'pin1': []}
+                else:
+                    R_dict = run_leg(rev, leg)
 
                 # get wafer mapping for this leg
                 wafer_idx = np.where((wafer['Side'] == side) &
