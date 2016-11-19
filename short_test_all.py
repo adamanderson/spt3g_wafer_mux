@@ -283,12 +283,12 @@ def wafer_bolo_info(wafer_side=None):
         mapping['ZIF_odd'] = np.append(mapping['ZIF_odd'], np.array(zifodd_list))
 
     # select only requested
-    wafer_side = np.atleast_1d(wafer_side)
-    if np.in1d(wafer_side, hex_sides).any():
-        idx = np.where(np.in1d(mapping['Side'], wafer_side))[0]
-
-        for k, v in mapping.items():
-            mapping[k] = v[idx]
+    if wafer_side is not None:
+        wafer_side = np.atleast_1d(wafer_side)
+        if np.in1d(wafer_side, hex_sides).any():
+            idx = np.where(np.in1d(mapping['Side'], wafer_side))[0]
+            for k, v in mapping.items():
+                mapping[k] = v[idx]
 
     return mapping
 
