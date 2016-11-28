@@ -317,7 +317,7 @@ def gen_csv_wafer(wafer_id, wafer_sides, legs=range(1,9), rev='2', test=False):
                   'Status']
 
     with open('short_test_{}_{}.csv'.format(wafer_id, wafer_sides_str), 'w') as csvfile:
-        writer = csv.DictWriter(csvfile, fieldnames=fieldnames, lineterminator='\n')
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames, lineterminator='\n', delimiter='\t')
         writer.writeheader()
 
         for side in wafer_sides:
@@ -365,8 +365,11 @@ def gen_csv_wafer(wafer_id, wafer_sides, legs=range(1,9), rev='2', test=False):
                         status = ''
                         status2 = ''
 
-                    if status2 and not status:
-                        status = status2
+                    if status2:
+                        if not status:
+                            status = status2
+                        elif status != status2:
+                            status += ' / ' + status2
 
                     # write
                     writer.writerow({'Side': side,
