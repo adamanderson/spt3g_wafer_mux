@@ -68,6 +68,7 @@ def run(rev, GNDpin=0):
     R_dict['pin1'].append(int(data[0]) + 1)
     R_dict['pin2'].append(int(data[1]) + 1)
     R_dict['ADC'].append(float('Inf'))
+    R_dict['R'].append(float('Inf'))
 
     if rev == '1' and GNDpin == 0:
         ser.write('GNDshorts0\n')
