@@ -64,6 +64,11 @@ def run(rev, GNDpin=0):
             R_dict['R'].append(Rval)
         p = ser.readline()
 
+    # dummy data to make sure that ground check on last pin is recorded
+    R_dict['pin1'].append(int(data[0]) + 1)
+    R_dict['pin2'].append(int(data[1]) + 1)
+    R_dict['ADC'].append(float('Inf'))
+
     if rev == '1' and GNDpin == 0:
         ser.write('GNDshorts0\n')
     elif rev == '1' and GNDpin == 89:
@@ -145,7 +150,7 @@ def run_leg(rev, leg):
     print 'Results for leg {}:'.format(leg)
     print n_short, 'TES-TES shorts'
     print n_open, 'TES opens'
-    print n_gnd, 'shorts to ground'
+    print n_gnd, 'pins shorted to ground'
     print n_ok, 'good connections'
 
     return R_dict
