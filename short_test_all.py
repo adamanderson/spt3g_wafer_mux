@@ -173,14 +173,14 @@ def wafer_bolo_info(wafer_side=None):
     mapping : dict
         Generic channel mapping information for a full wafer or one side
     '''
-    mapping = {'Pixel': np.array([], dtype=np.int32),
-               'Band': np.array([], dtype=np.int32),
-               'Pol': np.array([]),
+    mapping = {'pixel': np.array([], dtype=np.int32),
+               'band': np.array([], dtype=np.int32),
+               'pol': np.array([]),
                'bolometer': np.array([]),
-               'Side': np.array([], dtype=np.int32),
-               'Flex_cable': np.array([], dtype=np.int32),
+               'side': np.array([], dtype=np.int32),
+               'flex_cable': np.array([], dtype=np.int32),
                'LC_ind': np.array([], dtype=np.int32),
-               'ZIF_odd': np.array([], dtype=np.int32)}
+               'zif_odd': np.array([], dtype=np.int32)}
     hex_sides = [1,2,3,4,5,6]
 
     # version 2 LC chip
@@ -275,24 +275,24 @@ def wafer_bolo_info(wafer_side=None):
         # Extra pixel (last six bolos) on Side 1 not read out.
         lcind_list=np.append(lcind_list,np.ones(6,dtype=np.int32)-2)
 
-        mapping['Pixel'] = np.append(mapping['Pixel'], np.array(pixel_list))
-        mapping['Band'] = np.append(mapping['Band'], np.array(band_list))
-        mapping['Pol'] = np.append(mapping['Pol'], np.array(pol_list))
+        mapping['pixel'] = np.append(mapping['pixel'], np.array(pixel_list))
+        mapping['band'] = np.append(mapping['band'], np.array(band_list))
+        mapping['pol'] = np.append(mapping['pol'], np.array(pol_list))
         mapping['bolometer'] = np.append(
             mapping['bolometer'],
             np.array(['%d.%s.%s' % info for info in
                       zip(pixel_list, band_list,
                           np.array(np.array(['x','y'])[pol_list]))]))
-        mapping['Side'] = np.append(mapping['Side'], np.ones(cable_list.shape) * side)
-        mapping['Flex_cable'] = np.append(mapping['Flex_cable'], np.array(cable_list))
+        mapping['side'] = np.append(mapping['side'], np.ones(cable_list.shape) * side)
+        mapping['flex_cable'] = np.append(mapping['flex_cable'], np.array(cable_list))
         mapping['LC_ind'] = np.append(mapping['LC_ind'], np.array(lcind_list))
-        mapping['ZIF_odd'] = np.append(mapping['ZIF_odd'], np.array(zifodd_list))
+        mapping['zif_odd'] = np.append(mapping['zif_odd'], np.array(zifodd_list))
 
     # select only requested
     if wafer_side is not None:
         wafer_side = np.atleast_1d(wafer_side)
         if np.in1d(wafer_side, hex_sides).any():
-            idx = np.where(np.in1d(mapping['Side'], wafer_side))[0]
+            idx = np.where(np.in1d(mapping['side'], wafer_side))[0]
             for k, v in mapping.items():
                 mapping[k] = v[idx]
 
@@ -318,9 +318,9 @@ def gen_csv_wafer(wafer_id, wafer_sides, legs=range(1,9), rev='2', test=False):
     wafer = wafer_bolo_info(wafer_sides)
     wafer_sides_str = '_'.join([str(x) for x in wafer_sides])
 
-    fieldnames = ['Side', 'Flex_cable', 'ZIF_odd', 'bolometer',
+    fieldnames = ['side', 'flex_cable', 'zif_odd', 'bolometer',
                   'R', 'R_neighbor', 'R_ground_1', 'R_ground_2',
-                  'Status']
+                  'status']
 
     with open('short_test_{}_{}.csv'.format(wafer_id, wafer_sides_str), 'w') as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames, lineterminator='\n', delimiter='\t')
@@ -340,10 +340,10 @@ def gen_csv_wafer(wafer_id, wafer_sides, legs=range(1,9), rev='2', test=False):
                     R_dict = run_leg(rev, leg)
 
                 # get wafer mapping for this leg
-                wafer_idx = np.where((wafer['Side'] == side) &
-                                     (wafer['Flex_cable'] == leg))[0]
+                wafer_idx = np.where((wafer['side'] == side) &
+                                     (wafer['flex_cable'] == leg))[0]
                 wafer_data = [wafer[k][wafer_idx] for k in
-                              ['ZIF_odd', 'bolometer']]
+                              ['zif_odd', 'bolometer']]
 
                 for zif, bolo in zip(*wafer_data):
 
@@ -378,15 +378,15 @@ def gen_csv_wafer(wafer_id, wafer_sides, legs=range(1,9), rev='2', test=False):
                             status += ' / ' + status2
 
                     # write
-                    writer.writerow({'Side': side,
-                                     'Flex_cable': leg,
-                                     'ZIF_odd': zif,
+                    writer.writerow({'side': side,
+                                     'flex_cable': leg,
+                                     'zif_odd': zif,
                                      'bolometer': bolo,
                                      'R': R,
                                      'R_neighbor': R_neighbor,
                                      'R_ground_1': R_gnd,
                                      'R_ground_2': R_gnd_2,
-                                     'Status': status})
+                                     'status': status})
 
 if __name__ == "__main__":
     import argparse as ap
