@@ -18,6 +18,7 @@ import serial
 import time
 import csv
 import numpy as np
+import re
 
 Rref = 99500.0
 
@@ -318,9 +319,13 @@ def gen_csv_wafer(wafer_id, wafer_sides, legs=range(1,9), rev='2', test=False):
     wafer = wafer_bolo_info(wafer_sides)
     wafer_sides_str = '_'.join([str(x) for x in wafer_sides])
 
-    fieldnames = ['side', 'flex_cable', 'zif_odd', 'bolometer',
+    fieldnames = ['wafer', 'side', 'flex_cable', 'zif_odd', 'bolometer',
                   'R', 'R_neighbor', 'R_ground_1', 'R_ground_2',
                   'status']
+    try:
+        wafer_name = re.search('([wW][0-9]+)', wafer_id).group(0).lower()
+    except AttributeError as e:
+        wafer_name = ''
 
     with open('short_test_{}_{}.csv'.format(wafer_id, wafer_sides_str), 'w') as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames, lineterminator='\n', delimiter='\t')
@@ -378,7 +383,8 @@ def gen_csv_wafer(wafer_id, wafer_sides, legs=range(1,9), rev='2', test=False):
                             status += ' / ' + status2
 
                     # write
-                    writer.writerow({'side': side,
+                    writer.writerow({'wafer': wafer_name,
+                                     'side': side,
                                      'flex_cable': leg,
                                      'zif_odd': zif,
                                      'bolometer': bolo,
