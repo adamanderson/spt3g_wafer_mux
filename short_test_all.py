@@ -327,11 +327,28 @@ def gen_csv_wafer(wafer_id, wafer_sides, legs=range(1,9), rev='2', test=False):
     except AttributeError as e:
         wafer_name = ''
 
+    yield_file = open('yield_{}_{}.csv'.format(wafer_id, wafer_sides_str), 'w')
+    yield_writer = csv.DictWriter(yield_file, lineterminator='\n', delimiter='\t',
+                                  fieldnames=['wafer', 'side', 'flex_cable',
+                                              'tes_open', 'tes_short', 'ground_short',
+                                              'yield', 'yield_frac'])
+    yield_writer.writeheader()
+    total_open = 0
+    total_short = 0
+    total_ground = 0
+    total_yield = 0
+
     with open('short_test_{}_{}.csv'.format(wafer_id, wafer_sides_str), 'w') as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames, lineterminator='\n', delimiter='\t')
         writer.writeheader()
 
         for side in wafer_sides:
+
+            side_open = 0
+            side_short = 0
+            side_ground = 0
+            side_yield = 0
+
             for leg in legs:
                 try:
                     raw_input('\n\nConnect leg {} of side {} and press ENTER to analyze. Ctrl+D to exit. '.format(leg, side))
@@ -343,6 +360,11 @@ def gen_csv_wafer(wafer_id, wafer_sides, legs=range(1,9), rev='2', test=False):
                     R_dict = {'pin1': []}
                 else:
                     R_dict = run_leg(rev, leg)
+
+                leg_open = 0
+                leg_short = 0
+                leg_ground = 0
+                leg_yield = 0
 
                 # get wafer mapping for this leg
                 wafer_idx = np.where((wafer['side'] == side) &
@@ -382,6 +404,14 @@ def gen_csv_wafer(wafer_id, wafer_sides, legs=range(1,9), rev='2', test=False):
                         elif status != status2:
                             status += ' / ' + status2
 
+                    # count
+                    if 'TES open' in status:
+                        leg_open += 1
+                    if 'TES-TES short' in status:
+                        leg_short += 2
+                    if 'short to GND' in status:
+                        leg_ground += 1
+
                     # write
                     writer.writerow({'wafer': wafer_name,
                                      'side': side,
@@ -393,6 +423,49 @@ def gen_csv_wafer(wafer_id, wafer_sides, legs=range(1,9), rev='2', test=False):
                                      'R_ground_1': R_gnd,
                                      'R_ground_2': R_gnd_2,
                                      'status': status})
+
+                # record yield per leg
+                leg_yield = 33 - (leg_short + leg_open + leg_ground)
+                leg_yield_frac = leg_yield / 33.
+                side_open += leg_open
+                side_short += leg_short
+                side_ground += leg_ground
+                side_yield += leg_yield
+                yield_writer.writerow({'wafer': wafer_name,
+                                       'side': side,
+                                       'flex_cable': leg,
+                                       'tes_open': leg_open,
+                                       'tes_short': leg_short,
+                                       'ground_short': leg_ground,
+                                       'yield': leg_yield,
+                                       'yield_frac': leg_yield_frac})
+
+            # record yield per side
+            side_yield_frac = side_yield / (33. * 8.)
+            total_open += side_open
+            total_short += side_short
+            total_ground += side_ground
+            total_yield += side_yield
+            yield_writer.writerow({'wafer': wafer_name,
+                                   'side': side,
+                                   'flex_cable': 'all',
+                                   'tes_open': side_open,
+                                   'tes_short': side_short,
+                                   'ground_short': side_ground,
+                                   'yield': side_yield,
+                                   'yield_frac': side_yield_frac})
+
+    # record total yield
+    total_yield_frac = total_yield / (33. * 8. * 6.)
+    yield_writer.writerow({'wafer': wafer_name,
+                           'side': 'all',
+                           'flex_cable': 'all',
+                           'tes_open': total_open,
+                           'tes_short': total_short,
+                           'ground_short': total_ground,
+                           'yield': total_yield,
+                           'yield_frac': total_yield_frac})
+    yield_writer.close()
 
 if __name__ == "__main__":
     import argparse as ap
