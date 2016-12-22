@@ -465,7 +465,7 @@ def gen_csv_wafer(wafer_id, wafer_sides, legs=range(1,9), rev='2', test=False):
                            'ground_short': total_ground,
                            'yield': total_yield,
                            'yield_frac': total_yield_frac})
-    yield_writer.close()
+    yield_file.close()
 
 if __name__ == "__main__":
     import argparse as ap
