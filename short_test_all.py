@@ -150,8 +150,8 @@ def run_leg(rev, leg):
         R_dict['status'].append(info)
 
     print 'Results for leg {}:'.format(leg)
-    print n_short, 'TES-TES shorts'
     print n_open, 'TES opens'
+    print n_short, 'TES-TES shorts'
     print n_gnd, 'pins shorted to ground'
     print n_ok, 'good connections'
 
