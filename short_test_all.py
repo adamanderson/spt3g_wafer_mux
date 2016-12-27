@@ -98,20 +98,36 @@ def run(rev, GNDpin=0):
     R_dict['info'] = ["Resistance between any two mux pins."]
     return R_dict
 
-def run_leg(rev, leg):
+def run_leg(rev, leg, file_tag=None):
     """
     Run short checks on the given leg.
     """
     max_pin_open = 23
     min_pin_open = 65
 
-    if str(rev) == '1':
-        if leg % 2 == 1:
-            R_dict = run(rev, 89)
-        elif leg % 2 == 0:
-            R_dict = run(rev, 0)
-    elif str(rev) == '2':
-        R_dict = run(rev)
+    if file_tag:
+        with open('short_test_{}_{}.csv'.format(file_tag, leg), 'rU') as f:
+            R = csv.DictReader(f, delimiter=',')
+            R_dict = {}
+            for row in R:
+                for k, v in row.items():
+                    if k == 'info':
+                        continue
+                    if k not in R_dict:
+                        R_dict[k] = []
+                    R_dict[k].append(v)
+            R_dict['pin1'] = np.asarray([int(x) for x in R_dict['pin1']]) - 1
+            R_dict['pin2'] = np.asarray([int(x) for x in R_dict['pin2']]) - 1
+            R_dict['R'] = np.asarray([float(x) for x in R_dict['R']])
+            R_dict['R_gnd'] = np.asarray([float(x) for x in R_dict['R_gnd']])
+    else:
+        if str(rev) == '1':
+            if leg % 2 == 1:
+                R_dict = run(rev, 89)
+            elif leg % 2 == 0:
+                R_dict = run(rev, 0)
+        elif str(rev) == '2':
+            R_dict = run(rev)
 
     for k,v in R_dict.items():
         if k == 'info':
@@ -299,7 +315,7 @@ def wafer_bolo_info(wafer_side=None):
 
     return mapping
 
-def gen_csv_wafer(wafer_id, wafer_sides, legs=range(1,9), rev='2', test=False):
+def gen_csv_wafer(wafer_id, wafer_sides, legs=range(1,9), rev='2', test=False, from_file=False):
     """
     Create a CSV file for one side of the wafer.
 
@@ -351,7 +367,8 @@ def gen_csv_wafer(wafer_id, wafer_sides, legs=range(1,9), rev='2', test=False):
 
             for leg in legs:
                 try:
-                    raw_input('\n\nConnect leg {} of side {} and press ENTER to analyze. Ctrl+D to exit. '.format(leg, side))
+                    if not from_file:
+                        raw_input('\n\nConnect leg {} of side {} and press ENTER to analyze. Ctrl+D to exit. '.format(leg, side))
                 except EOFError:
                     break
 
@@ -359,7 +376,8 @@ def gen_csv_wafer(wafer_id, wafer_sides, legs=range(1,9), rev='2', test=False):
                 if test:
                     R_dict = {'pin1': []}
                 else:
-                    R_dict = run_leg(rev, leg)
+                    file_tag = '{}_{}'.format(wafer_id, side) if from_file else None
+                    R_dict = run_leg(rev, leg, file_tag=file_tag)
 
                 leg_open = 0
                 leg_short = 0
@@ -487,6 +505,8 @@ if __name__ == "__main__":
     P.add_argument('--rev', metavar='rev', action='store', default='2',
                    choices=['1','2'],
 		   help='PCB revision number (1 or 2)')
+    P.add_argument('--from-file', action='store_true', default=False,
+                   help='Load data per leg from file.  Useful for merging outputs from old scripts')
     args = P.parse_args()
 
-    gen_csv_wafer(args.wafer, args.sides, legs=args.legs, rev=args.rev)
+    gen_csv_wafer(args.wafer, args.sides, legs=args.legs, rev=args.rev, from_file=args.from_file)
