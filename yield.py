@@ -43,11 +43,15 @@ def gen_csv_wafer(wafer_id, wafer_sides=range(1,7), legs=range(1,9)):
         total_short = 0
         total_ground = 0
         total_yield = 0
+        total_count = 0
 
         short_idx = data['status'].str.contains('TES-TES short').nonzero()[0]
         short_idx = np.sort(np.append(short_idx, short_idx + 1))
         open_idx = data['status'].str.contains('TES open').nonzero()[0]
         gnd_idx = data['status'].str.contains('short to GND').nonzero()[0]
+
+        empty_idx = (data['bolometer'].str.startswith('129') |
+                     data['bolometer'].str.startswith('143')).nonzero()[0]
 
         for side in wafer_sides:
 
@@ -55,16 +59,19 @@ def gen_csv_wafer(wafer_id, wafer_sides=range(1,7), legs=range(1,9)):
             side_short = 0
             side_ground = 0
             side_yield = 0
+            side_count = 0
 
             for leg in legs:
 
                 onleg = ((data['side'] == side) &
                          (data['flex_cable'] == leg)).nonzero()[0]
+                onleg = np.setdiff1d(onleg, empty_idx)
 
-                if len(onleg) != 33:
+                leg_count = len(onleg)
+                if leg_count != 33:
                     print 'Found {} channels on side {} leg {}, expected 33.'.format(
-                        len(onleg), side, leg)
-                    if not len(onleg):
+                        leg_count, side, leg)
+                    if not leg_count:
                         continue
 
                 is_open = np.in1d(onleg, open_idx)
@@ -77,11 +84,12 @@ def gen_csv_wafer(wafer_id, wafer_sides=range(1,7), legs=range(1,9)):
                 leg_yield = np.sum(~(is_open | is_short | is_ground))
 
                 # record yield per leg
-                leg_yield_frac = leg_yield / 33.
+                leg_yield_frac = leg_yield / float(leg_count)
                 side_open += leg_open
                 side_short += leg_short
                 side_ground += leg_ground
                 side_yield += leg_yield
+                side_count += leg_count
                 writer.writerow({'wafer': wafer_name,
                                  'side': side,
                                  'flex_cable': leg,
@@ -92,11 +100,12 @@ def gen_csv_wafer(wafer_id, wafer_sides=range(1,7), legs=range(1,9)):
                                  'yield_frac': leg_yield_frac})
 
             # record yield per side
-            side_yield_frac = side_yield / (33. * len(legs))
+            side_yield_frac = side_yield / float(side_count)
             total_open += side_open
             total_short += side_short
             total_ground += side_ground
             total_yield += side_yield
+            total_count += side_count
             writer.writerow({'wafer': wafer_name,
                              'side': side,
                              'flex_cable': 'all',
@@ -107,7 +116,7 @@ def gen_csv_wafer(wafer_id, wafer_sides=range(1,7), legs=range(1,9)):
                              'yield_frac': side_yield_frac})
 
         # record total yield
-        total_yield_frac = total_yield / (33. * len(legs) * len(wafer_sides))
+        total_yield_frac = total_yield / float(total_count)
         writer.writerow({'wafer': wafer_name,
                          'side': 'all',
                          'flex_cable': 'all',

@@ -353,6 +353,7 @@ def gen_csv_wafer(wafer_id, wafer_sides, legs=range(1,9), rev='2', test=False, f
     total_short = 0
     total_ground = 0
     total_yield = 0
+    total_count = 0
 
     with open('short_test_{}_{}.csv'.format(wafer_id, wafer_sides_str), 'w') as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames, lineterminator='\n', delimiter='\t')
@@ -364,6 +365,7 @@ def gen_csv_wafer(wafer_id, wafer_sides, legs=range(1,9), rev='2', test=False, f
             side_short = 0
             side_ground = 0
             side_yield = 0
+            side_count = 0
 
             for leg in legs:
                 try:
@@ -383,7 +385,9 @@ def gen_csv_wafer(wafer_id, wafer_sides, legs=range(1,9), rev='2', test=False, f
                 leg_short = 0
                 leg_ground = 0
                 leg_yield = 0
+                leg_count = 0
                 tes_short = False
+                has_empty = False
 
                 # get wafer mapping for this leg
                 wafer_idx = np.where((wafer['side'] == side) &
@@ -423,6 +427,9 @@ def gen_csv_wafer(wafer_id, wafer_sides, legs=range(1,9), rev='2', test=False, f
                         elif status != status2:
                             status += ' / ' + status2
 
+                    if bolo.startswith('129') or bolo.startswith('143'):
+                        status = 'Empty pixel'
+
                     # count
                     if not status and not tes_short:
                         leg_yield += 1
@@ -435,6 +442,9 @@ def gen_csv_wafer(wafer_id, wafer_sides, legs=range(1,9), rev='2', test=False, f
                         tes_short = False
                     if 'short to GND' in status:
                         leg_ground += 1
+
+                    if 'Empty pixel' not in status:
+                        leg_count += 1
 
                     # write
                     writer.writerow({'wafer': wafer_name,
@@ -449,11 +459,12 @@ def gen_csv_wafer(wafer_id, wafer_sides, legs=range(1,9), rev='2', test=False, f
                                      'status': status})
 
                 # record yield per leg
-                leg_yield_frac = leg_yield / 33.
+                leg_yield_frac = leg_yield / float(leg_count)
                 side_open += leg_open
                 side_short += leg_short
                 side_ground += leg_ground
                 side_yield += leg_yield
+                side_count += leg_count
                 yield_writer.writerow({'wafer': wafer_name,
                                        'side': side,
                                        'flex_cable': leg,
@@ -464,11 +475,12 @@ def gen_csv_wafer(wafer_id, wafer_sides, legs=range(1,9), rev='2', test=False, f
                                        'yield_frac': leg_yield_frac})
 
             # record yield per side
-            side_yield_frac = side_yield / (33. * len(legs))
+            side_yield_frac = side_yield / float(side_count)
             total_open += side_open
             total_short += side_short
             total_ground += side_ground
             total_yield += side_yield
+            total_count += side_count
             yield_writer.writerow({'wafer': wafer_name,
                                    'side': side,
                                    'flex_cable': 'all',
@@ -479,7 +491,7 @@ def gen_csv_wafer(wafer_id, wafer_sides, legs=range(1,9), rev='2', test=False, f
                                    'yield_frac': side_yield_frac})
 
     # record total yield
-    total_yield_frac = total_yield / (33. * len(legs) * len(wafer_sides))
+    total_yield_frac = total_yield / float(side_count)
     yield_writer.writerow({'wafer': wafer_name,
                            'side': 'all',
                            'flex_cable': 'all',
