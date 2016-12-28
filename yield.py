@@ -46,7 +46,7 @@ def gen_csv_wafer(wafer_id, wafer_sides=range(1,7), legs=range(1,9)):
         total_count = 0
 
         short_idx = data['status'].str.contains('TES-TES short').nonzero()[0]
-        short_idx = np.sort(np.append(short_idx, short_idx + 1))
+        short_idx = np.unique(np.sort(np.append(short_idx, short_idx + 1)))
         open_idx = data['status'].str.contains('TES open').nonzero()[0]
         gnd_idx = data['status'].str.contains('short to GND').nonzero()[0]
 
