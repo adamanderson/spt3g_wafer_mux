@@ -98,7 +98,7 @@ def run(rev, GNDpin=0):
     R_dict['info'] = ["Resistance between any two mux pins."]
     return R_dict
 
-def run_leg(rev, leg, file_tag=None):
+def run_leg(rev, leg, side, file_tag=None):
     """
     Run short checks on the given leg.
     """
@@ -138,12 +138,20 @@ def run_leg(rev, leg, file_tag=None):
     n_short = 0
     n_gnd = 0
     n_ok = 0
+    n_empty = 0
 
     R_dict['status'] = []
     for pin in R_dict['pin1']:
         info = ''
-        if (leg % 2 == 1 and pin <= min_pin_open) or \
-           (leg % 2 == 0 and pin >= max_pin_open):
+
+        # count pins on empty pixels
+        if side in [2, 5] and leg == 8 and pin >= 78:
+            info = 'Empty pixel'
+            if pin % 2 == 0:
+                n_empty += 1
+
+        elif ((leg % 2 == 1 and pin <= min_pin_open) or
+              (leg % 2 == 0 and pin >= max_pin_open)):
             # check for TES-TES shorts below 1 MOhm
             if pin % 2 == 1 and (~np.isinf(R_dict['R'][pin]) and R_dict['R'][pin] < 1.e6):
                 info = 'TES-TES short'
@@ -169,6 +177,7 @@ def run_leg(rev, leg, file_tag=None):
     print n_open, 'TES opens'
     print n_short, 'TES-TES shorts'
     print n_gnd, 'pins shorted to ground'
+    print n_empty, 'pins on empty pixels'
     print n_ok, 'good connections'
 
     return R_dict
@@ -379,7 +388,7 @@ def gen_csv_wafer(wafer_id, wafer_sides, legs=range(1,9), rev='2', test=False, f
                     R_dict = {'pin1': []}
                 else:
                     file_tag = '{}_{}'.format(wafer_id, side) if from_file else None
-                    R_dict = run_leg(rev, leg, file_tag=file_tag)
+                    R_dict = run_leg(rev, leg, side, file_tag=file_tag)
 
                 leg_open = 0
                 leg_short = 0
