@@ -491,7 +491,7 @@ def gen_csv_wafer(wafer_id, wafer_sides, legs=range(1,9), rev='2', test=False, f
                                    'yield_frac': side_yield_frac})
 
     # record total yield
-    total_yield_frac = total_yield / float(side_count)
+    total_yield_frac = total_yield / float(total_count)
     yield_writer.writerow({'wafer': wafer_name,
                            'side': 'all',
                            'flex_cable': 'all',
