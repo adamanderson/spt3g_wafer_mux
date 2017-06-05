@@ -19,6 +19,7 @@ import time
 import csv
 import numpy as np
 import re
+import datetime
 
 Rref = 99500.0
 
@@ -352,7 +353,9 @@ def gen_csv_wafer(wafer_id, wafer_sides, legs=range(1,9), rev='2', test=False, f
     except AttributeError as e:
         wafer_name = ''
 
-    yield_file = open('yield_{}_{}.csv'.format(wafer_id, wafer_sides_str), 'w')
+    datestr = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+
+    yield_file = open('yield_{}_{}_{}.csv'.format(wafer_id, wafer_sides_str, datestr), 'w')
     yield_writer = csv.DictWriter(yield_file, lineterminator='\n', delimiter='\t',
                                   fieldnames=['wafer', 'side', 'flex_cable',
                                               'tes_open', 'tes_short', 'ground_short',
@@ -364,7 +367,7 @@ def gen_csv_wafer(wafer_id, wafer_sides, legs=range(1,9), rev='2', test=False, f
     total_yield = 0
     total_count = 0
 
-    with open('short_test_{}_{}.csv'.format(wafer_id, wafer_sides_str), 'w') as csvfile:
+    with open('short_test_{}_{}_{}.csv'.format(wafer_id, wafer_sides_str, datestr), 'w') as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames, lineterminator='\n', delimiter='\t')
         writer.writeheader()
 
