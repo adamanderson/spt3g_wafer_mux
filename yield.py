@@ -60,7 +60,8 @@ def gen_csv_wafer(filename):
         short_idx = np.unique(np.sort(np.append(short_idx, short_idx + 1)))
         open_idx = data['status'].str.contains('TES open').nonzero()[0]
         gnd_idx = data['status'].str.contains('short to GND').nonzero()[0]
-        empty_idx = data['status'].str.contains('Empty pixel').nonzero()[0]
+        empty_idx = (data['bolometer'].str.startswith('129') |
+                     data['bolometer'].str.startswith('143')).nonzero()[0]
 
         for side in wafer_sides:
 
