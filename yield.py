@@ -3,7 +3,7 @@ import numpy as np
 import re
 import pandas as pd
 
-def gen_csv_wafer(wafer_id, wafer_sides=range(1,7), legs=range(1,9)):
+def gen_csv_wafer(filename):
     """
     Create a CSV file with wafer yield
 
@@ -17,22 +17,33 @@ def gen_csv_wafer(wafer_id, wafer_sides=range(1,7), legs=range(1,9)):
         Leg(s) on each wafer side
     """
 
-    wafer_sides = np.atleast_1d(wafer_sides)
+    wafer_sides = range(1,7)
     wafer_sides_str = '_'.join([str(x) for x in wafer_sides])
+    legs = range(1,9)
+
+    dirname = os.path.dirname(filename)
+    basename = os.path.basename(filename)
+
+    if not basename.startswith('short_test_'):
+        raise ValueError('Unrecognized short_test filename {}'.format(filename))
+
+    yield_filename = os.path.join(
+        dirname, basename.replace('short_test_', 'yield_'))
+
+    wafer_id = basename.split('_')[2]
 
     try:
         wafer_name = re.search('([wW][0-9]+)', wafer_id).group(0).lower()
     except AttributeError as e:
         wafer_name = ''
 
-    data = pd.read_csv('short_test_{}_{}.csv'.format(wafer_id, wafer_sides_str),
-                       sep='\t', converters={'status': str, 'Status': str})
+    data = pd.read_csv(filename, sep='\t', converters={'status': str, 'Status': str})
     if 'Status' in data:
         data['status'] = data['Status']
         data['side'] = data['Side']
         data['flex_cable'] = data['Flex_cable']
 
-    with open('yield_{}_{}.csv'.format(wafer_id, wafer_sides_str), 'w') as yield_file:
+    with open(yield_filename, 'w') as yield_file:
         writer = csv.DictWriter(yield_file, lineterminator='\n', delimiter='\t',
                                 fieldnames=['wafer', 'side', 'flex_cable',
                                             'tes_open', 'tes_short', 'ground_short',
@@ -49,9 +60,7 @@ def gen_csv_wafer(wafer_id, wafer_sides=range(1,7), legs=range(1,9)):
         short_idx = np.unique(np.sort(np.append(short_idx, short_idx + 1)))
         open_idx = data['status'].str.contains('TES open').nonzero()[0]
         gnd_idx = data['status'].str.contains('short to GND').nonzero()[0]
-
-        empty_idx = (data['bolometer'].str.startswith('129') |
-                     data['bolometer'].str.startswith('143')).nonzero()[0]
+        empty_idx = data['status'].str.contains('Empty pixel').nonzero()[0]
 
         for side in wafer_sides:
 
@@ -68,11 +77,8 @@ def gen_csv_wafer(wafer_id, wafer_sides=range(1,7), legs=range(1,9)):
                 onleg = np.setdiff1d(onleg, empty_idx)
 
                 leg_count = len(onleg)
-                if leg_count != 33:
-                    print 'Found {} channels on side {} leg {}, expected 33.'.format(
-                        leg_count, side, leg)
-                    if not leg_count:
-                        continue
+                if not leg_count:
+                    continue
 
                 is_open = np.in1d(onleg, open_idx)
                 is_short = np.in1d(onleg, short_idx)
@@ -132,14 +138,8 @@ if __name__ == "__main__":
 
     P = ap.ArgumentParser(description="Tally yield from probe data",
                           formatter_class=ap.ArgumentDefaultsHelpFormatter)
-    P.add_argument('wafer', metavar='wafer', action='store', default=None,
-                   help='wafer name')
-    P.add_argument('-s', '--sides', metavar='side', action='store', type=int,
-                   default=range(1,7), nargs='+', choices=range(1,7),
-                   help='Wafer side(s). Choices: [1, 2, 3, 4, 5, 6]', )
-    P.add_argument('-l', '--legs', action='store', nargs='+', default=range(1,9),
-                   type=int, choices=range(1,9), metavar='leg',
-                   help='Flex cable leg(s) to analyze')
+    P.add_argument('filename', action='store', default=None,
+                   help='short_test filename to read')
     args = P.parse_args()
 
-    gen_csv_wafer(args.wafer, args.sides, legs=args.legs)
+    gen_csv_wafer(args.filename)
