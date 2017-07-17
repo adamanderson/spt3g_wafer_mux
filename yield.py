@@ -28,7 +28,7 @@ def gen_csv_wafer(filename):
         raise ValueError('Unrecognized short_test filename {}'.format(filename))
 
     yield_filename = os.path.join(
-        dirname, basename.replace('short_test_', 'yield_'))
+        dirname, basename.replace('short_test_', 'yield2_'))
 
     wafer_id = basename.split('_')[2]
 
