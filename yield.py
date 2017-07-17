@@ -2,6 +2,7 @@ import csv
 import numpy as np
 import re
 import pandas as pd
+import os
 
 def gen_csv_wafer(filename):
     """
