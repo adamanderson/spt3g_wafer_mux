@@ -107,6 +107,9 @@ def gen_csv_wafer(filename):
                                  'yield': leg_yield,
                                  'yield_frac': leg_yield_frac})
 
+            if not side_count:
+                continue
+
             # record yield per side
             side_yield_frac = side_yield / float(side_count)
             total_open += side_open
