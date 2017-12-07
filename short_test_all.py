@@ -150,6 +150,8 @@ def run_leg(rev, leg, side, file_tag=None):
             info = 'Empty pixel'
             if pin % 2 == 0:
                 n_empty += 1
+            if ~np.isinf(R_dict['R_gnd'][pin]) and R_dict['R_gnd'][pin] < 1.e6:
+                info += ' short to GND'
 
         elif ((leg % 2 == 1 and pin <= min_pin_open) or
               (leg % 2 == 0 and pin >= max_pin_open)):
