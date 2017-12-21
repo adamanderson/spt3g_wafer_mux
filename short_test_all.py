@@ -155,8 +155,8 @@ def run_leg(rev, leg, side, file_tag=None):
 
         elif ((leg % 2 == 1 and pin <= min_pin_open) or
               (leg % 2 == 0 and pin >= max_pin_open)):
-            # check for TES-TES shorts below 1 MOhm
-            if pin % 2 == 1 and (~np.isinf(R_dict['R'][pin]) and R_dict['R'][pin] < 1.e6):
+            # check for TES-TES shorts below 100 MOhm
+            if pin % 2 == 1 and (~np.isinf(R_dict['R'][pin]) and R_dict['R'][pin] < 100.e6):
                 info = 'TES-TES short'
                 n_short += 1
                 n_ok -= 1
@@ -167,7 +167,7 @@ def run_leg(rev, leg, side, file_tag=None):
             elif pin % 2 == 0:
                 n_ok += 1
             # check for shorts to ground
-            if ~np.isinf(R_dict['R_gnd'][pin]) and R_dict['R_gnd'][pin] < 1.e6:
+            if ~np.isinf(R_dict['R_gnd'][pin]) and R_dict['R_gnd'][pin] < 100.e6:
                 info = 'short to GND'
                 n_gnd += 1
                 if pin % 2 == 0:
