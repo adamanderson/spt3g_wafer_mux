@@ -442,17 +442,14 @@ def gen_csv_wafer(wafer_id, wafer_sides, legs=range(1,9), rev='2', test=False, f
                             status += ' / ' + status2
 
                     if bolo.startswith('129') or bolo.startswith('143'):
-                        if 'short to GND' in status:
-                            status = 'Empty pixel short to GND'
-                        else:
-                            status = 'Empty pixel'
+                        status = 'Empty pixel / ' + status
 
                     # count
                     if not status and not tes_short:
                         leg_yield += 1
-                    if 'TES open' in status:
+                    if 'TES open' in status and 'Empty pixel' not in status:
                         leg_open += 1
-                    if 'TES-TES short' in status:
+                    if 'TES-TES short' in status and 'Empty pixel' not in status:
                         leg_short += 2 # this one and its' neighbor
                         tes_short = True
                     else:
